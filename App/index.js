@@ -1,53 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+// Filename: index.js
+// Combined code from all files
 
-const App = () => {
-  const fullText = 'Hi, this is Apply.\nCreating mobile apps is now as simple as typing text.\nJust input your idea and press APPLY, and our platform does the rest...';
-  const [displayedText, setDisplayedText] = useState('');
-  const [index, setIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+    SafeAreaView, 
+    StyleSheet, 
+    Text, 
+    View, 
+    Image, 
+    Button, 
+    ActivityIndicator, 
+    ScrollView 
+} from 'react-native';
+import axios from 'axios';
 
-  useEffect(() => {
-    if (isPaused) return;
+const CardList = () => {
+    const [profiles, setProfiles] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const interval = setInterval(() => {
-      setDisplayedText((prev) => prev + fullText[index]);
-      setIndex((prev) => {
-        if (prev === fullText.length - 1) {
-          setIsPaused(true);
-          setTimeout(() => {
-            setDisplayedText('');
-            setIndex(0);
-            setIsPaused(false);
-          }, 2000);
-          return 0;
+    const fetchProfiles = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await axios.post('http://apihub.p.appply.xyz:3300/chatgpt', {
+                messages: [
+                    { role: "system", content: "You are a helpful assistant. Please provide fake user profiles for a dating app." },
+                    { role: "user", content: "I need 5 user profiles with names, ages, and pictures." }
+                ],
+                model: "gpt-4o"
+            });
+
+            const profilesData = JSON.parse(response.data.response);
+            setProfiles(profilesData.slice(0, 5));
+        } catch (error) {
+            console.error('Failed to fetch profiles:', error);
+        } finally {
+            setLoading(false);
         }
-        return prev + 1;
-      });
-    }, 100);
+    }, []);
 
-    return () => clearInterval(interval);
-  }, [index, isPaused]);
+    useEffect(() => {
+        fetchProfiles();
+    }, [fetchProfiles]);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{displayedText}</Text>
-    </View>
-  );
+    if (loading) {
+        return <ActivityIndicator size="large" color="#0000ff" />;
+    }
+
+    return (
+        <ScrollView contentContainerStyle={styles.list}>
+            {profiles.map((profile, index) => (
+                <View key={index} style={styles.card}>
+                    <Image source={{ uri: `https://picsum.photos/200/300?random=${index}` }} style={styles.image} />
+                    <Text style={styles.name}>{profile.name}, {profile.age}</Text>
+                    <Button title="Like" onPress={() => alert(`Liked ${profile.name}`)} />
+                    <Button title="Dislike" onPress={() => alert(`Disliked ${profile.name}`)} />
+                </View>
+            ))}
+        </ScrollView>
+    );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'black',
-    padding: 20,
-  },
-  text: {
-    color: 'white',
-    fontSize: 24,
-    fontFamily: 'monospace',
-  },
-});
+export default function App() {
+    return (
+        <SafeAreaView style={styles.container}>
+            <Text style={styles.title}>Flirting App</Text>
+            <CardList />
+        </SafeAreaView>
+    );
+}
 
-export default App;
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        marginTop: 20,
+        padding: 20,
+        backgroundColor: '#FFFFFF',
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    list: {
+        alignItems: 'center',
+        paddingBottom: 20,
+    },
+    card: {
+        backgroundColor: '#FFF',
+        borderRadius: 10,
+        padding: 20,
+        marginBottom: 20,
+        alignItems: 'center',
+        width: '90%',
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+    },
+    image: {
+        width: 200,
+        height: 300,
+        borderRadius: 10,
+        marginBottom: 10,
+    },
+    name: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    button: {
+        marginTop: 10,
+    },
+});
