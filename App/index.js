@@ -2,46 +2,107 @@
 // Combined code from all files
 
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Button } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, ScrollView, View, TextInput, ActivityIndicator, Button } from 'react-native';
+import axios from 'axios';
 
-const letters = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
-    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 
-    'U', 'V', 'W', 'X', 'Y', 'Z'
-];
+const API_URL = 'http://apihub.p.appply.xyz:3300/chatgpt';
 
-const LetterDisplay = () => {
-    const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
+const StoryGenerator = () => {
+    const [hero, setHero] = useState('');
+    const [villain, setVillain] = useState('');
+    const [plot, setPlot] = useState('');
+    const [story, setStory] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const nextLetter = () => {
-        setCurrentLetterIndex((prevIndex) => (prevIndex + 1) % letters.length);
-    };
+    const generateStory = async () => {
+        setLoading(true);
+        setStory('');
+        try {
+            const response = await axios.post(API_URL, {
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a helpful assistant. Please create an engaging fairy tale."
+                    },
+                    {
+                        role: "user",
+                        content: `Create a fairy tale with a hero named ${hero}, a villain named ${villain}, and this plot: ${plot}.`
+                    }
+                ],
+                model: "gpt-4o"
+            });
 
-    const prevLetter = () => {
-        setCurrentLetterIndex((prevIndex) => (prevIndex - 1 + letters.length) % letters.length);
+            const resultString = response.data.response;
+            setStory(resultString);
+        } catch (error) {
+            setStory("Error generating story. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <View style={styles.letterContainer}>
-            <Text style={styles.letter}>{letters[currentLetterIndex]}</Text>
-            <View style={styles.buttonContainer}>
-                <Button title="Previous" onPress={prevLetter} />
-                <Button title="Next" onPress={nextLetter} />
-            </View>
+        <View style={stylesGenerator.container}>
+            <Text style={stylesGenerator.label}>Hero</Text>
+            <TextInput
+                style={stylesGenerator.input}
+                value={hero}
+                onChangeText={setHero}
+            />
+            <Text style={stylesGenerator.label}>Villain</Text>
+            <TextInput
+                style={stylesGenerator.input}
+                value={villain}
+                onChangeText={setVillain}
+            />
+            <Text style={stylesGenerator.label}>Plot</Text>
+            <TextInput
+                style={stylesGenerator.input}
+                value={plot}
+                onChangeText={setPlot}
+            />
+            <Button title="Generate Story" onPress={generateStory} />
+            {loading ? <ActivityIndicator size="large" color="#0000ff" /> : null}
+            {story ? <Text style={stylesGenerator.story}>{story}</Text> : null}
         </View>
     );
 };
 
+const stylesGenerator = StyleSheet.create({
+    container: {
+        flex: 1,
+        marginVertical: 10,
+    },
+    label: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#CCCCCC',
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 10,
+    },
+    story: {
+        marginTop: 10,
+        fontSize: 16,
+    },
+});
+
 export default function App() {
     return (
-        <SafeAreaView style={styles.container}>
-            <Text style={styles.title}>Learn to Read</Text>
-            <LetterDisplay />
+        <SafeAreaView style={stylesApp.container}>
+            <Text style={stylesApp.title}>Fairy Tale Generator</Text>
+            <ScrollView>
+                <StoryGenerator />
+            </ScrollView>
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const stylesApp = StyleSheet.create({
     container: {
         flex: 1,
         marginTop: 20,
@@ -53,20 +114,5 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 20,
-    },
-    letterContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    letter: {
-        fontSize: 96,
-        fontWeight: 'bold',
-        marginBottom: 20,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '60%',
     },
 });
